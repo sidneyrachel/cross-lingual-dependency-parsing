@@ -2,4 +2,4 @@
 external_resources/
 .DS_Store
 */__pycache__/
-models/
+trained_models/
