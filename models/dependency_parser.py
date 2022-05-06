@@ -10,8 +10,8 @@ from models.edge_factored_parser import EdgeFactoredParser
 
 plt.style.use('seaborn')
 
-nltk.download('punkt')
-nltk.download('averaged_perceptron_tagger')
+# nltk.download('punkt')
+# nltk.download('averaged_perceptron_tagger')
 
 
 class DependencyParser:
@@ -103,7 +103,8 @@ class DependencyParser:
             sort_key=lambda x: len(x.words),
             repeat=False,
             train=True,
-            sort=True)
+            sort=True
+        )
 
         val_iterator = torchtext.legacy.data.BucketIterator(
             self.val_examples,
@@ -112,7 +113,8 @@ class DependencyParser:
             sort_key=lambda x: len(x.words),
             repeat=False,
             train=True,
-            sort=True)
+            sort=True
+        )
 
         train_batches = list(train_iterator)
         val_batches = list(val_iterator)
@@ -123,7 +125,7 @@ class DependencyParser:
 
         history = defaultdict(list)
 
-        n_epochs = 1
+        n_epochs = 30
 
         for i in range(1, n_epochs + 1):
             t0 = time.time()
