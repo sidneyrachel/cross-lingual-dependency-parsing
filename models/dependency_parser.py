@@ -126,7 +126,7 @@ class DependencyParser:
 
         history = defaultdict(list)
 
-        n_epochs = 1
+        n_epochs = 30
 
         for i in range(1, n_epochs + 1):
             t0 = time.time()
