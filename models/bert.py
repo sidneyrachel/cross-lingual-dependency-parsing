@@ -18,7 +18,9 @@ class BERT:
 
     def get_token_type_id_padding(self):
         # TODO: What if there are more than 1 sentences
-        return self.tokenizer.bos_token_id
+        bos_token_id = 0
+
+        return bos_token_id
 
     def get_input_id_padding(self):
         return self.tokenizer.pad_token_id
@@ -28,7 +30,9 @@ class BERT:
             tokenized_sentence
     ):
         # TODO: What if there are more than 1 sentences
-        return [self.tokenizer.bos_token_id] * len(tokenized_sentence)
+        bos_token_id = 0
+
+        return [bos_token_id] * len(tokenized_sentence)
 
     @staticmethod
     def get_attention_masks(
