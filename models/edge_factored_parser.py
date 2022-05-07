@@ -102,6 +102,11 @@ class EdgeFactoredParser(nn.Module):
             attention_masks,
             evaluate=False
     ):
+        # We don't want to evaluate the loss or attachment score for the positions
+        # where we have a padding token. So we create a mask that will be zero for those
+        # positions and one elsewhere.
+        pad_mask = (words != self.pad_id).float()
+
         if not evaluate:
             # If we are training, apply the word/tag dropout to the word and tag tensors.
             words, postags, input_ids = self.word_tag_dropout(
@@ -121,11 +126,6 @@ class EdgeFactoredParser(nn.Module):
             attention_masks=attention_masks
         )
         edge_scores, rel_scores = self.edge_scorer(encoded)
-
-        # We don't want to evaluate the loss or attachment score for the positions
-        # where we have a padding token. So we create a mask that will be zero for those
-        # positions and one elsewhere.
-        pad_mask = (words != self.pad_id).float()
 
         loss = self.compute_loss(edge_scores, rel_scores, heads, deprels, pad_mask)
 

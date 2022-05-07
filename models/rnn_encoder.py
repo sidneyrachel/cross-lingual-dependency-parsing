@@ -54,6 +54,7 @@ class RNNEncoder(nn.Module):
             attention_masks
     ):
         pos_emb = self.pos_embedding(postags)
+
         if self.is_ctx_embedding:
             word_emb = self.pretrained_we_model.get_full_word_embeddings(
                 embedding_mode=self.word_emb_mode,
