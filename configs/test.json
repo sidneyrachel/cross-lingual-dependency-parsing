@@ -1,0 +1,5 @@
+{
+  "is_ctx_embedding": true,
+  "pretrained_ctx_embedding": "bert",
+  "word_emb_mode": "last"
+}

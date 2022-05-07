@@ -15,6 +15,7 @@ class EdgeFactoredParser(nn.Module):
             rnn_depth,
             mlp_size,
             rel_size,
+            pretrained_we_model,
             update_pretrained=False
     ):
         super().__init__()
@@ -23,8 +24,16 @@ class EdgeFactoredParser(nn.Module):
         pos_field = fields[1][1]
 
         # Sentence encoder module.
-        self.encoder = RNNEncoder(word_field, word_emb_dim, pos_field, pos_emb_dim, rnn_size, rnn_depth,
-                                  update_pretrained)
+        self.encoder = RNNEncoder(
+            word_field=word_field,
+            word_emb_dim=word_emb_dim,
+            pos_field=pos_field,
+            pos_emb_dim=pos_emb_dim,
+            rnn_size=rnn_size,
+            rnn_depth=rnn_depth,
+            update_pretrained=update_pretrained,
+            pretrained_we_model=pretrained_we_model
+        )
 
         # Edge scoring module.
         self.edge_scorer = BiaffineEdgeScorer(
@@ -48,12 +57,34 @@ class EdgeFactoredParser(nn.Module):
 
         return words * w_dropout_mask, postags * p_dropout_mask
 
-    def forward(self, words, postags, heads, deprels, evaluate=False):
+    def forward(
+            self,
+            words,
+            postags,
+            heads,
+            deprels,
+            sent_length,
+            we_tokenized_sent_length,
+            word_offsets,
+            input_ids,
+            token_type_ids,
+            attention_masks,
+            evaluate=False
+    ):
         if self.training:
             # If we are training, apply the word/tag dropout to the word and tag tensors.
             words, postags = self.word_tag_dropout(words, postags, 0.25)
 
-        encoded = self.encoder(words, postags)
+        encoded = self.encoder(
+            words=words,
+            postags=postags,
+            sent_length=sent_length,
+            we_tokenized_sent_length=we_tokenized_sent_length,
+            word_offsets=word_offsets,
+            input_ids=input_ids,
+            token_type_ids=token_type_ids,
+            attention_masks=attention_masks
+        )
         edge_scores, rel_scores = self.edge_scorer(encoded)
 
         # We don't want to evaluate the loss or attachment score for the positions
@@ -120,9 +151,28 @@ class EdgeFactoredParser(nn.Module):
 
         return n_uas_errors, n_las_errors, n_tokens
 
-    def predict(self, words, postags):
+    def predict(
+            self,
+            words,
+            postags,
+            sent_length,
+            we_tokenized_sent_length,
+            word_offsets,
+            input_ids,
+            token_type_ids,
+            attention_masks
+    ):
         # This method is used to parse a sentence when the model has been trained.
-        encoded = self.encoder(words, postags)
+        encoded = self.encoder(
+            words=words,
+            postags=postags,
+            sent_length=sent_length,
+            we_tokenized_sent_length=we_tokenized_sent_length,
+            word_offsets=word_offsets,
+            input_ids=input_ids,
+            token_type_ids=token_type_ids,
+            attention_masks=attention_masks
+        )
         edge_scores, rel_scores = self.edge_scorer(encoded)
         edge_preds = edge_scores.argmax(-1)
         rel_preds = rel_scores.argmax(-1).gather(-1, edge_preds.unsqueeze(-1)).squeeze(-1)
