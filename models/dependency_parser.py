@@ -38,8 +38,8 @@ class DependencyParser:
             batch_first=True
         )
         self.DEPREL = torchtext.legacy.data.Field(
-            init_token=pad,
-            pad_token=pad,
+            init_token='root',
+            pad_token='root',
             sequential=True,
             batch_first=True
         )
@@ -78,6 +78,7 @@ class DependencyParser:
             rnn_size=256,
             rnn_depth=3,
             mlp_size=256,
+            rel_size=len(self.DEPREL.vocab.stoi),
             update_pretrained=False
         )
 
@@ -125,7 +126,7 @@ class DependencyParser:
 
         history = defaultdict(list)
 
-        n_epochs = 30
+        n_epochs = 1
 
         for i in range(1, n_epochs + 1):
             t0 = time.time()
@@ -134,7 +135,7 @@ class DependencyParser:
 
             self.model.train()
             for batch in train_batches:
-                loss = self.model(batch.words, batch.postags, batch.heads)
+                loss = self.model(batch.words, batch.postags, batch.heads, batch.deprels)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -146,7 +147,13 @@ class DependencyParser:
             self.model.eval()
             with torch.no_grad():
                 for batch in val_batches:
-                    loss, n_err, n_tokens = self.model(batch.words, batch.postags, batch.heads, evaluate=True)
+                    loss, n_err, n_tokens = self.model(
+                        batch.words,
+                        batch.postags,
+                        batch.heads,
+                        batch.deprels,
+                        evaluate=True
+                    )
                     stats['val_loss'] += loss.item()
                     stats['val_n_tokens'] += n_tokens
                     stats['val_n_err'] += n_err
@@ -188,19 +195,22 @@ class DependencyParser:
         )
 
         # Apply the trained model to the examples.
-        out = []
+        out_edges = []
+        out_rels = []
         self.model.eval()
         with torch.no_grad():
             for batch in iterator:
-                predicted = self.model.predict(batch.words, batch.postags)
-                out.extend(predicted.cpu().numpy())
+                predicted_edges, predicted_rels = self.model.predict(batch.words, batch.postags)
+                out_edges.extend(predicted_edges.cpu().numpy())
+                out_rels.extend(predicted_rels.cpu().numpy())
 
-        return out
+        return out_edges, out_rels
 
     def parse_sentence(self, sentence):
         tokenized = nltk.word_tokenize(sentence)
         tagged = nltk.pos_tag(tokenized)
-        edges = self.parse([tagged])[0]
+        out_edges, out_rels = self.parse([tagged])
+        edges, rels = out_edges[0], out_rels[0]
 
-        for i, ((word, tag), head) in enumerate(zip(tagged, edges[1:]), 1):
-            print(f'{i:2} {word:10} {tag:4} {head}')
+        for i, ((word, tag), head, rel) in enumerate(zip(tagged, edges[1:], rels[1:]), 1):
+            print(f'{i:2} {word:10} {tag:4} {head} {self.DEPREL.vocab.itos[rel]}')
