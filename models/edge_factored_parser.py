@@ -3,6 +3,7 @@ from torch import nn
 
 from models.rnn_encoder import RNNEncoder
 from models.biaffine_edge_scorer import BiaffineEdgeScorer
+from variables import config as cf
 
 
 class EdgeFactoredParser(nn.Module):
@@ -20,19 +21,20 @@ class EdgeFactoredParser(nn.Module):
     ):
         super().__init__()
 
-        word_field = fields[0][1]
-        pos_field = fields[1][1]
+        self.word_field = fields[0][1]
+        self.pos_field = fields[1][1]
+        self.pretrained_we_model = pretrained_we_model
 
         # Sentence encoder module.
         self.encoder = RNNEncoder(
-            word_field=word_field,
+            word_field=self.word_field,
             word_emb_dim=word_emb_dim,
-            pos_field=pos_field,
+            pos_field=self.pos_field,
             pos_emb_dim=pos_emb_dim,
             rnn_size=rnn_size,
             rnn_depth=rnn_depth,
             update_pretrained=update_pretrained,
-            pretrained_we_model=pretrained_we_model
+            pretrained_we_model=self.pretrained_we_model
         )
 
         # Edge scoring module.
@@ -44,18 +46,47 @@ class EdgeFactoredParser(nn.Module):
 
         # To deal with the padding positions later, we need to know the
         # encoding of the padding dummy word.
-        self.pad_id = word_field.vocab.stoi[word_field.pad_token]
+        self.pad_id = self.word_field.vocab.stoi[self.word_field.pad_token]
 
         # Loss function that we will use during training.
         self.loss = torch.nn.CrossEntropyLoss(reduction='none')
 
-    def word_tag_dropout(self, words, postags, p_drop):
-        # Randomly replace some of the positions in the word and postag tensors with a zero.
-        # This solution is a bit hacky because we assume that zero corresponds to the "unknown" token.
-        w_dropout_mask = (torch.rand(size=words.shape, device=words.device) > p_drop).long()
-        p_dropout_mask = (torch.rand(size=words.shape, device=words.device) > p_drop).long()
+    def word_tag_dropout(
+            self,
+            words,
+            postags,
+            input_ids
+    ):
+        word_unk_id = self.word_field.vocab.stoi[self.word_field.unk_token]
+        pos_unk_id = self.pos_field.vocab.stoi[self.pos_field.unk_token]
+        input_unk_id = self.pretrained_we_model.get_unknown_token_id()
 
-        return words * w_dropout_mask, postags * p_dropout_mask
+        w_dropout_mask = (torch.rand(size=words.shape, device=words.device) > cf.config.word_dropout).long()
+        p_dropout_mask = (torch.rand(size=words.shape, device=postags.device) > cf.config.postag_dropout).long()
+        i_dropout_mask = (torch.rand(size=words.shape, device=input_ids.device) > cf.config.word_dropout).long()
+
+        w_indices = (w_dropout_mask == 0).nonzero(as_tuple=False).cpu().numpy()
+        p_indices = (p_dropout_mask == 0).nonzero(as_tuple=False).cpu().numpy()
+        i_indices = (i_dropout_mask == 0).nonzero(as_tuple=False).cpu().numpy()
+
+        w_tuple_indices = tuple(map(tuple, w_indices))
+        p_tuple_indices = tuple(map(tuple, p_indices))
+        i_tuple_indices = tuple(map(tuple, i_indices))
+
+        cloned_words = torch.clone(words)
+        cloned_postags = torch.clone(postags)
+        cloned_input_ids = torch.clone(input_ids)
+
+        for index in w_tuple_indices:
+            cloned_words[index] = word_unk_id
+
+        for index in p_tuple_indices:
+            cloned_postags[index] = pos_unk_id
+
+        for index in i_tuple_indices:
+            cloned_input_ids[index] = input_unk_id
+
+        return cloned_words, cloned_postags, cloned_input_ids
 
     def forward(
             self,
@@ -71,9 +102,13 @@ class EdgeFactoredParser(nn.Module):
             attention_masks,
             evaluate=False
     ):
-        if self.training:
+        if not evaluate:
             # If we are training, apply the word/tag dropout to the word and tag tensors.
-            words, postags = self.word_tag_dropout(words, postags, 0.25)
+            words, postags, input_ids = self.word_tag_dropout(
+                words=words,
+                postags=postags,
+                input_ids=input_ids
+            )
 
         encoded = self.encoder(
             words=words,

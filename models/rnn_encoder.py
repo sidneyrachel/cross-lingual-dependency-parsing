@@ -55,7 +55,6 @@ class RNNEncoder(nn.Module):
     ):
         pos_emb = self.pos_embedding(postags)
         if self.is_ctx_embedding:
-            print('HEREE')
             word_emb = self.pretrained_we_model.get_full_word_embeddings(
                 embedding_mode=self.word_emb_mode,
                 sentence_lengths=sent_length,

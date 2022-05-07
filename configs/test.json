@@ -1,5 +1,7 @@
 {
   "is_ctx_embedding": true,
   "pretrained_ctx_embedding": "bert",
-  "word_emb_mode": "last"
+  "word_emb_mode": "last",
+  "word_dropout": 0.25,
+  "postag_dropout": 0.25
 }

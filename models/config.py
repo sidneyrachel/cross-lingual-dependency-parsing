@@ -17,3 +17,11 @@ class Config:
     @property
     def word_emb_mode(self):
         return self.config['word_emb_mode']
+
+    @property
+    def word_dropout(self):
+        return self.config['word_dropout']
+
+    @property
+    def postag_dropout(self):
+        return self.config['postag_dropout']

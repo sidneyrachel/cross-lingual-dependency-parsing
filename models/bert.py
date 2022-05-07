@@ -16,24 +16,19 @@ class BERT:
         self.model.to(device)
         self.model.eval()
 
-    @staticmethod
-    def get_token_type_id_padding():
+    def get_token_type_id_padding(self):
         # TODO: What if there are more than 1 sentences
-        bos_index = 0
-
-        return bos_index
+        return self.tokenizer.bos_token_id
 
     def get_input_id_padding(self):
-        return self.model.config.pad_token_id
+        return self.tokenizer.pad_token_id
 
-    @staticmethod
     def get_token_type_ids(
+            self,
             tokenized_sentence
     ):
         # TODO: What if there are more than 1 sentences
-        bos_index = 0
-
-        return [bos_index] * len(tokenized_sentence)
+        return [self.tokenizer.bos_token_id] * len(tokenized_sentence)
 
     @staticmethod
     def get_attention_masks(
@@ -50,6 +45,11 @@ class BERT:
             tokenized_sentence
     ):
         return self.tokenizer.convert_tokens_to_ids(tokenized_sentence)
+
+    def get_unknown_token_id(
+            self
+    ):
+        return self.tokenizer.unk_token_id
 
     def tokenize_sentence(
             self,
