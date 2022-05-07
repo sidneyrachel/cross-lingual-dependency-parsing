@@ -147,7 +147,7 @@ class DependencyParser:
             self.model.eval()
             with torch.no_grad():
                 for batch in val_batches:
-                    loss, n_err, n_tokens = self.model(
+                    loss, n_uas_errors, n_las_errors, n_tokens = self.model(
                         batch.words,
                         batch.postags,
                         batch.heads,
@@ -156,21 +156,31 @@ class DependencyParser:
                     )
                     stats['val_loss'] += loss.item()
                     stats['val_n_tokens'] += n_tokens
-                    stats['val_n_err'] += n_err
+                    stats['val_n_uas_errors'] += n_uas_errors
+                    stats['val_n_las_errors'] += n_las_errors
 
             val_loss = stats['val_loss'] / len(val_batches)
-            uas = (stats['val_n_tokens'] - stats['val_n_err']) / stats['val_n_tokens']
+            uas = (stats['val_n_tokens'] - stats['val_n_uas_errors']) / stats['val_n_tokens']
+            las = (stats['val_n_tokens'] - stats['val_n_las_errors']) / stats['val_n_tokens']
+
             history['val_loss'].append(val_loss)
             history['uas'].append(uas)
+            history['las'].append(las)
 
             t1 = time.time()
             print(
-                f'Epoch {i}: train loss = {train_loss:.4f}, val loss = {val_loss:.4f}, UAS = {uas:.4f}, time = {t1 - t0:.4f}')
+                f'Epoch {i}: '
+                f'train loss = {train_loss:.4f}, '
+                f'val loss = {val_loss:.4f}, '
+                f'UAS = {uas:.4f}, '
+                f'LAS = {las: .4f}, '
+                f'time = {t1 - t0:.4f}')
 
         plt.plot(history['train_loss'])
         plt.plot(history['val_loss'])
         plt.plot(history['uas'])
-        plt.legend(['training loss', 'validation loss', 'UAS'])
+        plt.plot(history['las'])
+        plt.legend(['training loss', 'validation loss', 'UAS', 'LAS'])
 
     def parse(self, sentences):
         # This method applies the trained model to a list of sentences.

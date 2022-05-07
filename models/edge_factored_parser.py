@@ -64,8 +64,8 @@ class EdgeFactoredParser(nn.Module):
         loss = self.compute_loss(edge_scores, rel_scores, heads, deprels, pad_mask)
 
         if evaluate:
-            n_errors, n_tokens = self.evaluate(edge_scores, heads, pad_mask)
-            return loss, n_errors, n_tokens
+            n_uas_errors, n_las_errors, n_tokens = self.evaluate(edge_scores, rel_scores, heads, deprels, pad_mask)
+            return loss, n_uas_errors, n_las_errors, n_tokens
         else:
             return loss
 
@@ -90,16 +90,35 @@ class EdgeFactoredParser(nn.Module):
 
         return avg_arc_loss + avg_rel_loss
 
-    def evaluate(self, edge_scores, heads, pad_mask):
+    def evaluate(self, edge_scores, rel_scores, heads, deprels, pad_mask):
         n_sentences, n_words, _ = edge_scores.shape
-        edge_scores = edge_scores.view(n_sentences * n_words, n_words)
+        _, _, _, n_rels = rel_scores.shape
+
         heads = heads.view(n_sentences * n_words)
+        deprels = deprels.view(n_sentences * n_words)
+
+        edge_scores = edge_scores.view(n_sentences * n_words, n_words)
+        rel_scores = rel_scores.reshape(n_sentences * n_words, n_words, n_rels)
+        rel_scores = rel_scores[torch.arange(len(heads)), heads]
+
         pad_mask = pad_mask.view(n_sentences * n_words)
         n_tokens = pad_mask.sum()
-        predictions = edge_scores.argmax(dim=1)
-        n_errors = (predictions != heads).float().dot(pad_mask)
 
-        return n_errors.item(), n_tokens.item()
+        edge_predictions = edge_scores.argmax(dim=1)
+        rel_predictions = rel_scores.argmax(dim=1)
+
+        pad_mask_bool = pad_mask.bool()
+        n_arc_error_mask = (edge_predictions != heads) & pad_mask_bool
+        n_label_error_mask = (edge_predictions == heads) & (rel_predictions != deprels) & pad_mask_bool
+
+        n_arc_errors = n_arc_error_mask.float().sum()
+        n_label_errors = n_label_error_mask.float().sum()
+
+        n_uas_errors = n_arc_errors.item()
+        n_las_errors = n_uas_errors + n_label_errors.item()
+        n_tokens = n_tokens.item()
+
+        return n_uas_errors, n_las_errors, n_tokens
 
     def predict(self, words, postags):
         # This method is used to parse a sentence when the model has been trained.
