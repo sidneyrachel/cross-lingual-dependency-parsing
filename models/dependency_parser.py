@@ -199,8 +199,6 @@ class DependencyParser:
 
             self.model.train()
             for batch in train_batches:
-                # print('words', batch.raw_we_tokenized_words[0])
-                # print('input ids', batch.input_ids[0])
                 loss = self.model(
                     words=batch.words,
                     postags=batch.postags,
