@@ -148,8 +148,12 @@ class DependencyParser:
 
         self.model.to(self.device)
 
-    def save_model(self):
-        save_path = '{}.pt'.format(self.model_prefix)
+    def save_model(self, postfix=None):
+        if postfix:
+            save_path = '{}.pt'.format('_'.join([self.model_prefix, postfix]))
+        else:
+            save_path = '{}.pt'.format(self.model_prefix)
+
         file = open(save_path, mode='wb')
         torch.save(self.model.state_dict(), file)
         file.close()

@@ -150,7 +150,7 @@ class XLM:
 
             embedded_sentences[i, :sentence_length, :] = self.get_full_word_embeddings_from_sub_word_embeddings(
                 word_offsets=word_offsets[i],
-                sentence_length=sentence_length[i],
+                sentence_length=sentence_lengths[i],
                 tokenized_sentence_length=tokenized_sentence_lengths[i],
                 embedded_sentence=embedded_sentences[i]
             )
