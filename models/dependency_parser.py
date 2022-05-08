@@ -21,6 +21,7 @@ class DependencyParser:
     def __init__(
             self,
             logger,
+            is_train=True,
             lower=False
     ):
         self.device = 'cuda'
@@ -175,7 +176,7 @@ class DependencyParser:
             batch_size=cf.config.val_batch_size,
             sort_key=lambda x: len(x.words),
             repeat=False,
-            train=True,
+            train=is_train,
             sort=True
         )
 
@@ -185,7 +186,7 @@ class DependencyParser:
             batch_size=cf.config.test_batch_size,
             sort_key=lambda x: len(x.words),
             repeat=False,
-            train=True,
+            train=is_train,
             sort=True
         )
 

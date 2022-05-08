@@ -11,10 +11,10 @@ if __name__ == '__main__':
         init_config(f'configs/{config_filename}.json')
         logger = get_logger()
 
-        parser = DependencyParser(logger)
+        parser = DependencyParser(logger=logger, is_train=True)
         parser.train()
 
-        parser = DependencyParser(logger)
+        parser = DependencyParser(logger=logger, is_train=False)
         parser.load_model(postfix='best')
         parser.evaluate(set_name='dev')
         parser.evaluate(set_name='test')
