@@ -319,6 +319,8 @@ class DependencyParser:
         plt.plot(history['val_uas'])
         plt.plot(history['val_las'])
         plt.legend(['training loss', 'validation loss', 'validation UAS', 'validation LAS'])
+        plt.savefig(f'figures/{cf.config.fig_name}.png')
+        plt.close()
 
     def evaluate(self, set_name):
         if set_name == 'test':

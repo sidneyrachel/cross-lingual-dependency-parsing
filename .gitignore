@@ -3,3 +3,4 @@ external_resources/
 .DS_Store
 */__pycache__/
 trained_models/
+figures/
