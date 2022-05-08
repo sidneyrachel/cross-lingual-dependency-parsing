@@ -1,0 +1,23 @@
+{
+  "is_ctx_embedding": true,
+  "pretrained_ctx_embedding": "bert",
+  "word_emb_mode": "last",
+  "word_dropout": 0.25,
+  "postag_dropout": 0.25,
+  "encoder_arch": "lstm",
+  "bidirectional": true,
+  "word_emb_dim": 300,
+  "pos_emb_dim": 32,
+  "rnn_size": 256,
+  "rnn_depth": 3,
+  "arc_mlp_size": 256,
+  "rel_mlp_size": 256,
+  "num_epoch": 50,
+  "train_batch_size": 256,
+  "val_batch_size": 256,
+  "test_batch_size": 256,
+  "train_set": ["turkish"],
+  "val_set": ["turkish"],
+  "test_set": ["tatar"],
+  "model_name": "turkish_tatar_lstm_zero"
+}
