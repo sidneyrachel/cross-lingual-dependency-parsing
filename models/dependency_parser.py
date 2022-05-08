@@ -112,16 +112,19 @@ class DependencyParser:
         create_folder_if_not_exist('trained_models')
 
         # Read training and validation data according to the predefined split.
+        self.logger.info('Load training data')
         self.train_examples = read_data(
             corpus_files=get_corpus_files(langs=cf.config.train_set, set_name='train'),
             datafields=self.fields,
             pretrained_we_model=self.pretrained_we_model
         )
+        self.logger.info('Load validation data')
         self.val_examples = read_data(
             corpus_files=get_corpus_files(langs=cf.config.val_set, set_name='dev'),
             datafields=self.fields,
             pretrained_we_model=self.pretrained_we_model
         )
+        self.logger.info('Load testing data')
         self.test_examples = read_data(
             corpus_files=get_corpus_files(langs=cf.config.test_set, set_name='test'),
             datafields=self.fields,
