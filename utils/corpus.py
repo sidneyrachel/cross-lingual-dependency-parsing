@@ -6,7 +6,8 @@ def get_corpus_files(langs, set_name):
     corpus_files = []
 
     for lang in langs:
-        corpus_files.append(dataset_prefix + lang_to_set_to_file_mapper[lang][set_name])
+        for filename in lang_to_set_to_file_mapper[lang][set_name]:
+            corpus_files.append(dataset_prefix + filename)
 
     return corpus_files
 
