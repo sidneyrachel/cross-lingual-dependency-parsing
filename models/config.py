@@ -69,3 +69,19 @@ class Config:
     @property
     def test_set(self):
         return self.config['test_set']
+
+    @property
+    def num_epoch(self):
+        return self.config['num_epoch']
+
+    @property
+    def train_batch_size(self):
+        return self.config['train_batch_size']
+
+    @property
+    def val_batch_size(self):
+        return self.config['val_batch_size']
+
+    @property
+    def test_batch_size(self):
+        return self.config['test_batch_size']

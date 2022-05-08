@@ -12,6 +12,10 @@
   "rnn_depth": 3,
   "arc_mlp_size": 256,
   "rel_mlp_size": 256,
+  "num_epoch": 30,
+  "train_batch_size": 256,
+  "val_batch_size": 256,
+  "test_batch_size": 256,
   "train_set": ["english"],
   "val_set": ["english"],
   "test_set": ["english"]

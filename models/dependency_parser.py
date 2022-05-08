@@ -1,7 +1,7 @@
 import torchtext
 import torch
 import nltk
-from utils.corpus import read_data
+from utils.corpus import read_data, get_corpus_files
 from utils.file import create_folder_if_not_exist
 import matplotlib.pyplot as plt
 from collections import defaultdict, Counter
@@ -111,12 +111,17 @@ class DependencyParser:
 
         # Read training and validation data according to the predefined split.
         self.train_examples = read_data(
-            corpus_file='external_resources/ud-treebanks-v2.9/UD_English-EWT/en_ewt-ud-train.conllu',
+            corpus_files=get_corpus_files(langs=cf.config.train_set, set_name='train'),
             datafields=self.fields,
             pretrained_we_model=self.pretrained_we_model
         )
         self.val_examples = read_data(
-            corpus_file='external_resources/ud-treebanks-v2.9/UD_English-EWT/en_ewt-ud-dev.conllu',
+            corpus_files=get_corpus_files(langs=cf.config.val_set, set_name='dev'),
+            datafields=self.fields,
+            pretrained_we_model=self.pretrained_we_model
+        )
+        self.test_examples = read_data(
+            corpus_files=get_corpus_files(langs=cf.config.test_set, set_name='test'),
             datafields=self.fields,
             pretrained_we_model=self.pretrained_we_model
         )
@@ -149,6 +154,40 @@ class DependencyParser:
 
         self.model.to(self.device)
 
+        train_iterator = torchtext.legacy.data.BucketIterator(
+            self.train_examples,
+            device=self.device,
+            batch_size=cf.config.train_batch_size,
+            sort_key=lambda x: len(x.words),
+            repeat=False,
+            train=True,
+            sort=True
+        )
+
+        val_iterator = torchtext.legacy.data.BucketIterator(
+            self.val_examples,
+            device=self.device,
+            batch_size=cf.config.val_batch_size,
+            sort_key=lambda x: len(x.words),
+            repeat=False,
+            train=True,
+            sort=True
+        )
+
+        test_iterator = torchtext.legacy.data.BucketIterator(
+            self.test_examples,
+            device=self.device,
+            batch_size=cf.config.test_batch_size,
+            sort_key=lambda x: len(x.words),
+            repeat=False,
+            train=True,
+            sort=True
+        )
+
+        self.train_batches = list(train_iterator)
+        self.val_batches = list(val_iterator)
+        self.test_batches = list(test_iterator)
+
     def save_model(self, postfix=None):
         if postfix:
             save_path = '{}.pt'.format('_'.join([self.model_prefix, postfix]))
@@ -159,43 +198,20 @@ class DependencyParser:
         torch.save(self.model.state_dict(), file)
         file.close()
 
-    def load_model(self):
-        save_path = '{}.pt'.format(self.model_prefix)
+    def load_model(self, postfix=None):
+        save_path = '{}.pt'.format('_'.join([self.model_prefix, postfix]))
         self.model.load_state_dict(torch.load(save_path, map_location=torch.device(self.device)))
 
     def train(self):
-        batch_size = 256
-
-        train_iterator = torchtext.legacy.data.BucketIterator(
-            self.train_examples,
-            device=self.device,
-            batch_size=batch_size,
-            sort_key=lambda x: len(x.words),
-            repeat=False,
-            train=True,
-            sort=True
-        )
-
-        val_iterator = torchtext.legacy.data.BucketIterator(
-            self.val_examples,
-            device=self.device,
-            batch_size=batch_size,
-            sort_key=lambda x: len(x.words),
-            repeat=False,
-            train=True,
-            sort=True
-        )
-
-        train_batches = list(train_iterator)
-        val_batches = list(val_iterator)
-
         # We use the betas recommended in the paper by Dozat and Manning. They also use
         # a learning rate cooldown, which we don't use here to keep things simple.
         optimizer = torch.optim.Adam(self.model.parameters(), betas=(0.9, 0.9), lr=0.005, weight_decay=1e-5)
 
         history = defaultdict(list)
 
-        n_epochs = 30
+        n_epochs = cf.config.num_epoch
+        best_las = 0
+        best_epoch = 0
 
         for i in range(1, n_epochs + 1):
             t0 = time.time()
@@ -203,7 +219,7 @@ class DependencyParser:
             stats = Counter()
 
             self.model.train()
-            for batch in train_batches:
+            for batch in self.train_batches:
                 loss = self.model(
                     words=batch.words,
                     postags=batch.postags,
@@ -221,12 +237,12 @@ class DependencyParser:
                 optimizer.step()
                 stats['train_loss'] += loss.item()
 
-            train_loss = stats['train_loss'] / len(train_batches)
+            train_loss = stats['train_loss'] / len(self.train_batches)
             history['train_loss'].append(train_loss)
 
             self.model.eval()
             with torch.no_grad():
-                for batch in val_batches:
+                for batch in self.val_batches:
                     loss, n_uas_errors, n_las_errors, n_tokens = self.model(
                         words=batch.words,
                         postags=batch.postags,
@@ -245,28 +261,105 @@ class DependencyParser:
                     stats['val_n_uas_errors'] += n_uas_errors
                     stats['val_n_las_errors'] += n_las_errors
 
-            val_loss = stats['val_loss'] / len(val_batches)
-            uas = (stats['val_n_tokens'] - stats['val_n_uas_errors']) / stats['val_n_tokens']
-            las = (stats['val_n_tokens'] - stats['val_n_las_errors']) / stats['val_n_tokens']
+            val_loss = stats['val_loss'] / len(self.val_batches)
+            val_uas = (stats['val_n_tokens'] - stats['val_n_uas_errors']) / stats['val_n_tokens']
+            val_las = (stats['val_n_tokens'] - stats['val_n_las_errors']) / stats['val_n_tokens']
+
+            if val_las > best_las:
+                best_las = val_las
+                best_epoch = i
+                self.save_model(postfix='best')
 
             history['val_loss'].append(val_loss)
-            history['uas'].append(uas)
-            history['las'].append(las)
+            history['val_uas'].append(val_uas)
+            history['val_las'].append(val_las)
+
+            self.model.eval()
+            with torch.no_grad():
+                for batch in self.test_batches:
+                    loss, n_uas_errors, n_las_errors, n_tokens = self.model(
+                        words=batch.words,
+                        postags=batch.postags,
+                        heads=batch.heads,
+                        deprels=batch.deprels,
+                        sent_length=batch.sent_length,
+                        we_tokenized_sent_length=batch.we_tokenized_sent_length,
+                        word_offsets=batch.word_offsets,
+                        input_ids=batch.input_ids,
+                        token_type_ids=batch.token_type_ids,
+                        attention_masks=batch.attention_masks,
+                        evaluate=True
+                    )
+                    stats['test_loss'] += loss.item()
+                    stats['test_n_tokens'] += n_tokens
+                    stats['test_n_uas_errors'] += n_uas_errors
+                    stats['test_n_las_errors'] += n_las_errors
+
+            test_loss = stats['test_loss'] / len(self.test_batches)
+            test_uas = (stats['test_n_tokens'] - stats['test_n_uas_errors']) / stats['test_n_tokens']
+            test_las = (stats['test_n_tokens'] - stats['test_n_las_errors']) / stats['test_n_tokens']
 
             t1 = time.time()
             print(
                 f'Epoch {i}: '
                 f'train loss = {train_loss:.4f}, '
                 f'val loss = {val_loss:.4f}, '
-                f'UAS = {uas:.4f}, '
-                f'LAS = {las: .4f}, '
-                f'time = {t1 - t0:.4f}')
+                f'test loss = {test_loss:.4f}, '
+                f'val UAS = {val_uas:.4f}, '
+                f'val LAS = {val_las: .4f}, '
+                f'test UAS = {test_uas:.4f}, '
+                f'test LAS = {test_las: .4f}, '
+                f'time = {t1 - t0:.4f}'
+            )
+
+        print(f'Best epoch: {best_epoch}')
 
         plt.plot(history['train_loss'])
         plt.plot(history['val_loss'])
-        plt.plot(history['uas'])
-        plt.plot(history['las'])
-        plt.legend(['training loss', 'validation loss', 'UAS', 'LAS'])
+        plt.plot(history['val_uas'])
+        plt.plot(history['val_las'])
+        plt.legend(['training loss', 'validation loss', 'validation UAS', 'validation LAS'])
+
+    def evaluate(self, set_name):
+        if set_name == 'test':
+            batches = self.test_batches
+        elif set_name == 'dev':
+            batches = self.val_batches
+        else:
+            batches = []
+
+        stats = Counter()
+
+        self.model.eval()
+        with torch.no_grad():
+            for batch in batches:
+                loss, n_uas_errors, n_las_errors, n_tokens = self.model(
+                    words=batch.words,
+                    postags=batch.postags,
+                    heads=batch.heads,
+                    deprels=batch.deprels,
+                    sent_length=batch.sent_length,
+                    we_tokenized_sent_length=batch.we_tokenized_sent_length,
+                    word_offsets=batch.word_offsets,
+                    input_ids=batch.input_ids,
+                    token_type_ids=batch.token_type_ids,
+                    attention_masks=batch.attention_masks,
+                    evaluate=True
+                )
+                stats['loss'] += loss.item()
+                stats['n_tokens'] += n_tokens
+                stats['n_uas_errors'] += n_uas_errors
+                stats['n_las_errors'] += n_las_errors
+
+        loss = stats['loss'] / len(batches)
+        uas = (stats['n_tokens'] - stats['n_uas_errors']) / stats['n_tokens']
+        las = (stats['n_tokens'] - stats['n_las_errors']) / stats['n_tokens']
+
+        print(
+            f'{set_name} loss = {loss:.4f}, '
+            f'{set_name} UAS = {uas:.4f}, '
+            f'{set_name} LAS = {las: .4f}'
+        )
 
     def parse(self, sentences):
         # This method applies the trained model to a list of sentences.
