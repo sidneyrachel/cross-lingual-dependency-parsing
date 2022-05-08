@@ -9,9 +9,8 @@ if __name__ == '__main__':
 
     parser = DependencyParser()
     parser.train()
-    parser.parse_sentence('The big dog lives in its little house.')
-    parser.save_model(postfix='last')
 
     parser = DependencyParser()
     parser.load_model(postfix='best')
+    parser.evaluate(set_name='dev')
     parser.evaluate(set_name='test')

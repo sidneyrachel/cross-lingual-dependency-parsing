@@ -106,7 +106,7 @@ class DependencyParser:
             ('raw_we_tokenized_words', self.RAW_WE_TOKENIZED_WORD)
         ]
 
-        self.model_prefix = 'trained_models/biaffine_dep_parser'
+        self.model_prefix = f'trained_models/{cf.config.model_name}'
         create_folder_if_not_exist('trained_models')
 
         # Read training and validation data according to the predefined split.
@@ -312,6 +312,7 @@ class DependencyParser:
                 f'time = {t1 - t0:.4f}'
             )
 
+        self.save_model(postfix='last')
         print(f'Best epoch: {best_epoch}')
 
         plt.plot(history['train_loss'])
