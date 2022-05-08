@@ -4,3 +4,4 @@ external_resources/
 */__pycache__/
 trained_models/
 figures/
+logs/
