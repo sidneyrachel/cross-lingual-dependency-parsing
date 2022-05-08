@@ -87,9 +87,5 @@ class Config:
         return self.config['test_batch_size']
 
     @property
-    def fig_name(self):
-        return self.config['fig_name']
-
-    @property
     def model_name(self):
         return self.config['model_name']

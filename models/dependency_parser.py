@@ -20,9 +20,11 @@ plt.style.use('seaborn')
 class DependencyParser:
     def __init__(
             self,
+            logger,
             lower=False
     ):
         self.device = 'cuda'
+        self.logger = logger
         self.pretrained_ctx_embedding = cf.config.pretrained_ctx_embedding
 
         if self.pretrained_ctx_embedding == 'bert':
@@ -127,12 +129,12 @@ class DependencyParser:
         )
 
         # Load the pre-trained word embeddings that come with the torchtext library.
-        use_pretrained = True
+        use_pretrained = False
         if use_pretrained:
-            print('We are using pre-trained word embeddings.')
+            self.logger('We are using pre-trained word embeddings.')
             self.WORD.build_vocab(self.train_examples, vectors="glove.840B.300d")
         else:
-            print('We are training word embeddings from scratch.')
+            self.logger('We are training word embeddings from scratch.')
             self.WORD.build_vocab(self.train_examples, max_size=10000)
 
         self.POS.build_vocab(self.train_examples)
@@ -300,7 +302,7 @@ class DependencyParser:
             test_las = (stats['test_n_tokens'] - stats['test_n_las_errors']) / stats['test_n_tokens']
 
             t1 = time.time()
-            print(
+            self.logger(
                 f'Epoch {i}: '
                 f'train loss = {train_loss:.4f}, '
                 f'val loss = {val_loss:.4f}, '
@@ -313,14 +315,14 @@ class DependencyParser:
             )
 
         self.save_model(postfix='last')
-        print(f'Best epoch: {best_epoch}')
+        self.logger(f'Best epoch: {best_epoch}')
 
         plt.plot(history['train_loss'])
         plt.plot(history['val_loss'])
         plt.plot(history['val_uas'])
         plt.plot(history['val_las'])
         plt.legend(['training loss', 'validation loss', 'validation UAS', 'validation LAS'])
-        plt.savefig(f'figures/{cf.config.fig_name}.png')
+        plt.savefig(f'figures/{cf.config.model_name}.png')
         plt.close()
 
     def evaluate(self, set_name):
@@ -358,7 +360,7 @@ class DependencyParser:
         uas = (stats['n_tokens'] - stats['n_uas_errors']) / stats['n_tokens']
         las = (stats['n_tokens'] - stats['n_las_errors']) / stats['n_tokens']
 
-        print(
+        self.logger(
             f'{set_name} loss = {loss:.4f}, '
             f'{set_name} UAS = {uas:.4f}, '
             f'{set_name} LAS = {las: .4f}'
@@ -438,4 +440,4 @@ class DependencyParser:
         edges, rels = out_edges[0], out_rels[0]
 
         for i, ((word, tag), head, rel) in enumerate(zip(tagged, edges[1:], rels[1:]), 1):
-            print(f'{i:2} {word:10} {tag:4} {head} {self.DEPREL.vocab.itos[rel]}')
+            self.logger(f'{i:2} {word:10} {tag:4} {head} {self.DEPREL.vocab.itos[rel]}')
