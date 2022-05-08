@@ -4,7 +4,7 @@ from variables.embedding import word_emb_name_to_dim_mapper
 from variables import config as cf
 
 
-class RNNEncoder(nn.Module):
+class LSTMEncoder(nn.Module):
     def __init__(
             self,
             word_field,
@@ -34,7 +34,7 @@ class RNNEncoder(nn.Module):
         input_size = (word_emb_name_to_dim_mapper[cf.config.pretrained_ctx_embedding] + pos_emb_dim) \
             if self.is_ctx_embedding else (word_emb_dim + pos_emb_dim)
 
-        self.rnn = nn.LSTM(
+        self.lstm = nn.LSTM(
             input_size=input_size,
             hidden_size=rnn_size,
             batch_first=True,
@@ -70,6 +70,6 @@ class RNNEncoder(nn.Module):
 
         word_pos_emb = torch.cat([word_emb, pos_emb], dim=2)
 
-        rnn_out, _ = self.rnn(word_pos_emb)
+        lstm_out, _ = self.lstm(word_pos_emb)
 
-        return rnn_out
+        return lstm_out

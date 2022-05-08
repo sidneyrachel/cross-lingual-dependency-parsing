@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from models.rnn_encoder import RNNEncoder
+from models.lstm_encoder import LSTMEncoder
 from models.biaffine_edge_scorer import BiaffineEdgeScorer
 from variables import config as cf
 
@@ -26,7 +26,7 @@ class EdgeFactoredParser(nn.Module):
         self.pretrained_we_model = pretrained_we_model
 
         # Sentence encoder module.
-        self.encoder = RNNEncoder(
+        self.encoder = LSTMEncoder(
             word_field=self.word_field,
             word_emb_dim=word_emb_dim,
             pos_field=self.pos_field,
