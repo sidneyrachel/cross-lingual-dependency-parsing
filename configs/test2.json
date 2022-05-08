@@ -19,5 +19,5 @@
   "train_set": ["english"],
   "val_set": ["english"],
   "test_set": ["english"],
-  "model_name": "english_english_lstm"
+  "model_name": "english_english_lstm_mono"
 }
