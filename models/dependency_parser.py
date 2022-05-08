@@ -225,7 +225,12 @@ class DependencyParser:
             stats = Counter()
 
             self.model.train()
-            for batch in self.train_batches:
+            for batch_idx, batch in enumerate(self.train_batches):
+                seq_len = batch.input_ids.shape[1]
+                if seq_len > 512:
+                    self.logger.info(f'Batch train {batch_idx} sequence length more than 512. Len: {seq_len}')
+                    continue
+
                 loss = self.model(
                     words=batch.words,
                     postags=batch.postags,
@@ -248,7 +253,12 @@ class DependencyParser:
 
             self.model.eval()
             with torch.no_grad():
-                for batch in self.val_batches:
+                for batch_idx, batch in enumerate(self.val_batches):
+                    seq_len = batch.input_ids.shape[1]
+                    if seq_len > 512:
+                        self.logger.info(f'Batch dev {batch_idx} sequence length more than 512. Len: {seq_len}')
+                        continue
+
                     loss, n_uas_errors, n_las_errors, n_tokens = self.model(
                         words=batch.words,
                         postags=batch.postags,
@@ -282,7 +292,12 @@ class DependencyParser:
 
             self.model.eval()
             with torch.no_grad():
-                for batch in self.test_batches:
+                for batch_idx, batch in enumerate(self.test_batches):
+                    seq_len = batch.input_ids.shape[1]
+                    if seq_len > 512:
+                        self.logger.info(f'Batch test {batch_idx} sequence length more than 512. Len: {seq_len}')
+                        continue
+
                     loss, n_uas_errors, n_las_errors, n_tokens = self.model(
                         words=batch.words,
                         postags=batch.postags,
@@ -341,7 +356,12 @@ class DependencyParser:
 
         self.model.eval()
         with torch.no_grad():
-            for batch in batches:
+            for batch_idx, batch in enumerate(batches):
+                seq_len = batch.input_ids.shape[1]
+                if seq_len > 512:
+                    self.logger.info(f'Batch {set_name} {batch_idx} sequence length more than 512. Len: {seq_len}')
+                    continue
+
                 loss, n_uas_errors, n_las_errors, n_tokens = self.model(
                     words=batch.words,
                     postags=batch.postags,
