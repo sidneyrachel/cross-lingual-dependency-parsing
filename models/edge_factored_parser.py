@@ -2,6 +2,8 @@ import torch
 from torch import nn
 
 from models.lstm_encoder import LSTMEncoder
+from models.gru_encoder import GRUEncoder
+from models.rnn_encoder import RNNEncoder
 from models.biaffine_edge_scorer import BiaffineEdgeScorer
 from variables import config as cf
 
@@ -14,7 +16,8 @@ class EdgeFactoredParser(nn.Module):
             pos_emb_dim,
             rnn_size,
             rnn_depth,
-            mlp_size,
+            arc_mlp_size,
+            rel_mlp_size,
             rel_size,
             pretrained_we_model,
             update_pretrained=False
@@ -26,21 +29,47 @@ class EdgeFactoredParser(nn.Module):
         self.pretrained_we_model = pretrained_we_model
 
         # Sentence encoder module.
-        self.encoder = LSTMEncoder(
-            word_field=self.word_field,
-            word_emb_dim=word_emb_dim,
-            pos_field=self.pos_field,
-            pos_emb_dim=pos_emb_dim,
-            rnn_size=rnn_size,
-            rnn_depth=rnn_depth,
-            update_pretrained=update_pretrained,
-            pretrained_we_model=self.pretrained_we_model
-        )
+        encoder_arch = cf.config.encoder_arch
+
+        if encoder_arch == 'rnn':
+            self.encoder = RNNEncoder(
+                word_field=self.word_field,
+                word_emb_dim=word_emb_dim,
+                pos_field=self.pos_field,
+                pos_emb_dim=pos_emb_dim,
+                rnn_size=rnn_size,
+                rnn_depth=rnn_depth,
+                update_pretrained=update_pretrained,
+                pretrained_we_model=self.pretrained_we_model
+            )
+        elif encoder_arch == 'gru':
+            self.encoder = GRUEncoder(
+                word_field=self.word_field,
+                word_emb_dim=word_emb_dim,
+                pos_field=self.pos_field,
+                pos_emb_dim=pos_emb_dim,
+                rnn_size=rnn_size,
+                rnn_depth=rnn_depth,
+                update_pretrained=update_pretrained,
+                pretrained_we_model=self.pretrained_we_model
+            )
+        else:
+            self.encoder = LSTMEncoder(
+                word_field=self.word_field,
+                word_emb_dim=word_emb_dim,
+                pos_field=self.pos_field,
+                pos_emb_dim=pos_emb_dim,
+                rnn_size=rnn_size,
+                rnn_depth=rnn_depth,
+                update_pretrained=update_pretrained,
+                pretrained_we_model=self.pretrained_we_model
+            )
 
         # Edge scoring module.
         self.edge_scorer = BiaffineEdgeScorer(
-            rnn_size=2 * rnn_size,
-            mlp_size=mlp_size,
+            rnn_size=2 * rnn_size if cf.config.bidirectional else rnn_size,
+            arc_mlp_size=arc_mlp_size,
+            rel_mlp_size=rel_mlp_size,
             rel_size=rel_size
         )
 

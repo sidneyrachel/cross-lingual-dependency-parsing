@@ -25,3 +25,47 @@ class Config:
     @property
     def postag_dropout(self):
         return self.config['postag_dropout']
+
+    @property
+    def encoder_arch(self):
+        return self.config['encoder_arch']
+
+    @property
+    def bidirectional(self):
+        return self.config['bidirectional']
+
+    @property
+    def word_emb_dim(self):
+        return self.config['word_emb_dim']
+
+    @property
+    def pos_emb_dim(self):
+        return self.config['pos_emb_dim']
+
+    @property
+    def rnn_size(self):
+        return self.config['rnn_size']
+
+    @property
+    def rnn_depth(self):
+        return self.config['rnn_depth']
+
+    @property
+    def arc_mlp_size(self):
+        return self.config['arc_mlp_size']
+
+    @property
+    def rel_mlp_size(self):
+        return self.config['rel_mlp_size']
+
+    @property
+    def train_set(self):
+        return self.config['train_set']
+
+    @property
+    def val_set(self):
+        return self.config['val_set']
+
+    @property
+    def test_set(self):
+        return self.config['test_set']

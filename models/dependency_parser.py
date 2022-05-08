@@ -136,11 +136,12 @@ class DependencyParser:
         # Create one of the models defined above.
         self.model = EdgeFactoredParser(
             self.fields,
-            word_emb_dim=300,
-            pos_emb_dim=32,
-            rnn_size=256,
-            rnn_depth=3,
-            mlp_size=256,
+            word_emb_dim=cf.config.word_emb_dim,
+            pos_emb_dim=cf.config.pos_emb_dim,
+            rnn_size=cf.config.rnn_size,
+            rnn_depth=cf.config.rnn_depth,
+            arc_mlp_size=cf.config.arc_mlp_size,
+            rel_mlp_size=cf.config.rel_mlp_size,
             rel_size=len(self.DEPREL.vocab.stoi),
             pretrained_we_model=self.pretrained_we_model,
             update_pretrained=False
