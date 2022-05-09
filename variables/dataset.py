@@ -15,6 +15,11 @@ lang_to_set_to_file_mapper = {
             'UD_Indonesian-PUD/id_pud-ud-test.conllu'
         ]
     },
+    'portuguese': {
+        'train': ['UD_Portuguese-Bosque/pt_bosque-ud-train.conllu'],
+        'dev': ['UD_Portuguese-Bosque/pt_bosque-ud-dev.conllu'],
+        'test': ['UD_Portuguese-Bosque/pt_bosque-ud-test.conllu']
+    },
     'tagalog': {
         'train': [],
         'dev': [],
@@ -109,6 +114,11 @@ lang_to_set_to_file_mapper = {
         'train': [],
         'dev': [],
         'test': ['UD_Low_Saxon-LSDC/nds_lsdc-ud-test.conllu']
+    },
+    'dutch': {
+        'train': ['UD_Dutch-Alpino/nl_alpino-ud-train.conllu', 'UD_Dutch-LassySmall/nl_lassysmall-ud-train.conllu'],
+        'dev': ['UD_Dutch-Alpino/nl_alpino-ud-dev.conllu', 'UD_Dutch-LassySmall/nl_lassysmall-ud-dev.conllu'],
+        'test': ['UD_Dutch-Alpino/nl_alpino-ud-test.conllu', 'UD_Dutch-LassySmall/nl_lassysmall-ud-test.conllu']
     },
     'french': {
         'train': ['UD_French-GSD/fr_gsd-ud-train.conllu', 'UD_French-ParTUT/fr_partut-ud-train.conllu'],
